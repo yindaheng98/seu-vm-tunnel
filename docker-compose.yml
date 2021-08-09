@@ -1,6 +1,6 @@
 version: "3"
 services:
-  ssh:
+  sshd:
     build: ./openssh-server
     ports: 
       - 2222:2222
@@ -15,7 +15,7 @@ services:
   frpc:
     image: yindaheng98/frp:client
     restart: always
-    network_mode: "service:ssh"
+    network_mode: "service:sshd"
     volumes:
       - ./frpc.ini:/frpc.ini
     deploy:
