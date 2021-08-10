@@ -80,7 +80,7 @@ systemctl enable frpc.service && systemctl start frpc.service && systemctl statu
 改用SSH隧道方案：
 
 ```sh
-ssh -NR 0.0.0.0:2222:localhost:22 yin@办公用电脑地址
+ssh -NR 0.0.0.0:22:localhost:22 yin@办公用电脑地址
 ```
 
 在`sshd`主机上登录：
@@ -93,41 +93,19 @@ ssh root@localhost -p 2222
 ssh root@192.168.1.11 -p 2222
 ```
 
-发现不能登录，`lsof`发现`sshd`主机只监听了`localhost`，把`0.0.0.0`换成`*`或者加上`-g`均无效。迫不得已，只能在`sshd`主机上再加一层FRP：
+发现不能登录，`lsof`发现`sshd`主机只监听了`localhost`，这是`sshd`限制了可以端口映射监听的IP范围，需要修改`sshd`配置文件使之能监听到`0.0.0.0`：
 
 ```sh
-FRP_URL=https://github.com/fatedier/frp/releases/download/v0.34.3/frp_0.34.3_linux_amd64.tar.gz
-PROXY=http://办公用电脑地址
-wget $FRP_URL -e HTTP_PROXY=$PROXY -e HTTPS_PROXY=$PROXY -O ~/frp.tar.gz &&
-    mkdir -p /etc/frp && tar -zxvf ~/frp.tar.gz -C /etc/frp --strip-components=1 &&
-    rm -f ~/frp.tar.gz
-cat > /etc/frp/frpc.ini <<EOF
-[common]
-server_addr = 办公用电脑地址
-server_port = 7000
-log_level = debug
-
-[Local]
-type = tcp
-local_ip = localhost
-local_port = 2222
-remote_port = 2222
-EOF
-/etc/frp/frpc -c /etc/frp/frpc.ini
+sed -ri "s/^#?GatewayPorts no/GatewayPorts clientspecified/g" /etc/ssh/sshd_config
 ```
 
-好了终于能连上ssh了，可喜可贺。接下来用同样的方法即可把远程桌面也加入转发。
+然后重启`sshd`，重复上述操作，就能连上ssh了。
+
+接下来用同样的方法即可把远程桌面也加入转发。
 
 ## 用`docker-compose`一键配置
 
-结构：
-
-```mermaid
-graph LR
-虚拟机--SSH Tunnel-->SSHD--Frpc-->Frps
-```
-
-虚拟机通过SSH Tunnel将本地的端口转发到`sshd`上，`sshd`再经由`frpc`将端口映射至`frps`。其中，`sshd`、`frpc`、`frps`可以用一个Compose合在一起。见[`docker-compose.yml`](./docker-compose.yml)文件。
+见[`docker-compose.yml`](./docker-compose.yml)文件。
 
 
 在办公机器上，先生成登录密钥，然后启动Compose：
@@ -135,6 +113,7 @@ graph LR
 ```sh
 mkdir -p ./data
 ssh-keygen -t rsa -b 4096 -f ./data/id_rsa -N ''
+docker-compose up -d
 ```
 
 测试是否能无密码登陆：
@@ -157,29 +136,13 @@ After=network.target
 
 [Service]
 Type=simple
-User=nobody
+User=root
 Restart=on-failure
 RestartSec=5s
-ExecStart=/usr/bin/ssh -vNR 0.0.0.0:22:localhost:22 root@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
-
-[Install]
-WantedBy=multi-user.target
-EOF
-cat > /etc/systemd/system/vnc-tunnel.service <<EOF
-[Unit]
-Description=Frp Client Service
-After=network.target
-
-[Service]
-Type=simple
-User=nobody
-Restart=on-failure
-RestartSec=5s
-ExecStart=/usr/bin/ssh -vNR 0.0.0.0:5900:localhost:5900 root@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
+ExecStart=/usr/bin/ssh -vN -R 0.0.0.0:22:localhost:22 -R 0.0.0.0:5900:localhost:5900 root@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
 
 [Install]
 WantedBy=multi-user.target
 EOF
 systemctl enable ssh-tunnel.service && systemctl start ssh-tunnel.service && systemctl status ssh-tunnel.service
-systemctl enable vnc-tunnel.service && systemctl start vnc-tunnel.service && systemctl status vnc-tunnel.service
 ```
