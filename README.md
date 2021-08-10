@@ -129,6 +129,20 @@ graph LR
 
 虚拟机通过SSH Tunnel将本地的端口转发到`sshd`上，`sshd`再经由`frpc`将端口映射至`frps`。其中，`sshd`、`frpc`、`frps`可以用一个Compose合在一起。见[`docker-compose.yml`](./docker-compose.yml)文件。
 
+
+在办公机器上，先生成登录密钥，然后启动Compose：
+
+```sh
+mkdir -p ./data
+ssh-keygen -t rsa -b 4096 -f ./data/id_rsa -N ''
+```
+
+测试是否能无密码登陆：
+
+```sh
+docker run --rm -it -v "$(pwd)/id_rsa:/root/.ssh/id_rsa" linuxserver/openssh-server sh -c "chmod 0600 /root/.ssh/id_rsa && ssh -v root@192.168.1.2 -p 2222 -o StrictHostKeyChecking=no"
+```
+
 在虚拟机上，需要将他们加入系统服务以开机启动：
 
 ```sh
@@ -142,7 +156,7 @@ Type=simple
 User=nobody
 Restart=on-failure
 RestartSec=5s
-ExecStart=ssh -vNR 0.0.0.0:22:localhost:22 yin@办公用电脑地址
+ExecStart=ssh -vNR 0.0.0.0:22:localhost:22 yin@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
 
 [Install]
 WantedBy=multi-user.target
@@ -157,7 +171,7 @@ Type=simple
 User=nobody
 Restart=on-failure
 RestartSec=5s
-ExecStart=ssh -vNR 0.0.0.0:5900:localhost:5900 yin@办公用电脑地址
+ExecStart=ssh -vNR 0.0.0.0:5900:localhost:5900 yin@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
 
 [Install]
 WantedBy=multi-user.target

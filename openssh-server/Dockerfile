@@ -6,6 +6,10 @@ RUN apt-get update && apt-get install -y openssh-server && \
     sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config && \
     sed -ri 's/^#?LogLevel INFO/LogLevel VERBOSE/g' /etc/ssh/sshd_config && \
-    sed -ri "s/^#?PasswordAuthentication yes/PasswordAuthentication yes/g" /etc/ssh/sshd_config && \
-    sed -ri "s/^#?PermitEmptyPasswords no/PermitEmptyPasswords yes/g" /etc/ssh/sshd_config
-CMD ["/usr/sbin/sshd", "-D", "-p", "2222"]
+    sed -ri "s/^#?PasswordAuthentication yes/PasswordAuthentication no/g" /etc/ssh/sshd_config && \
+    sed -ri "s/^#?RSAAuthentication yes/RSAAuthentication yes/g" /etc/ssh/sshd_config && \
+    sed -ri "s/^#?PubkeyAuthentication yes/PubkeyAuthentication yes/g" /etc/ssh/sshd_config && \
+    mkdir -p /root/.ssh && touch /root/.ssh/authorized_keys
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+CMD ["/usr/sbin/sshd", "-dD", "-p", "2222"]

@@ -5,6 +5,8 @@ services:
     ports: 
       - 2222:2222
     restart: always
+    volumes: 
+      - ./data/id_rsa.pub:/root/.ssh/authorized_keys
     deploy:
       resources:
           limits:
