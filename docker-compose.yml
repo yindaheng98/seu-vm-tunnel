@@ -3,41 +3,14 @@ services:
   sshd:
     build: ./openssh-server
     ports: 
+      - 22:22
       - 2222:2222
+      - 5900:5900
     restart: always
     deploy:
       resources:
           limits:
             memory: 100M
-    logging:
-      options:
-        max-size: 128k
-  frpc:
-    image: yindaheng98/frp:client
-    restart: always
-    network_mode: "service:sshd"
-    volumes:
-      - ./frpc.ini:/frpc.ini
-    deploy:
-      resources:
-          limits:
-            memory: 30M
-    logging:
-      options:
-        max-size: 128k
-  frps:
-    image: yindaheng98/frp:server
-    ports: 
-      - 7500:7500
-      - 22:22
-      - 5900:5900
-    restart: always
-    volumes:
-      - ./frps.ini:/frps.ini
-    deploy:
-      resources:
-          limits:
-            memory: 50M
     logging:
       options:
         max-size: 128k

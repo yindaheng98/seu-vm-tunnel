@@ -7,5 +7,6 @@ RUN apt-get update && apt-get install -y openssh-server && \
     sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config && \
     sed -ri 's/^#?LogLevel INFO/LogLevel VERBOSE/g' /etc/ssh/sshd_config && \
     sed -ri "s/^#?PasswordAuthentication yes/PasswordAuthentication yes/g" /etc/ssh/sshd_config && \
-    sed -ri "s/^#?PermitEmptyPasswords no/PermitEmptyPasswords yes/g" /etc/ssh/sshd_config
-CMD ["/usr/sbin/sshd", "-D", "-p", "2222"]
+    sed -ri "s/^#?PermitEmptyPasswords no/PermitEmptyPasswords yes/g" /etc/ssh/sshd_config && \
+    sed -ri "s/^#?GatewayPorts no/GatewayPorts clientspecified/g" /etc/ssh/sshd_config
+CMD ["/usr/sbin/sshd", "-dD", "-p", "2222"]
