@@ -140,12 +140,16 @@ ssh-keygen -t rsa -b 4096 -f ./data/id_rsa -N ''
 测试是否能无密码登陆：
 
 ```sh
-docker run --rm -it -v "$(pwd)/id_rsa:/root/.ssh/id_rsa" linuxserver/openssh-server sh -c "chmod 0600 /root/.ssh/id_rsa && ssh -v root@192.168.1.2 -p 2222 -o StrictHostKeyChecking=no"
+docker run --rm -it -v "$(pwd)/data/id_rsa:/root/.ssh/id_rsa" linuxserver/openssh-server sh -c "chmod 0600 /root/.ssh/id_rsa && ssh -v root@192.168.1.2 -p 2222 -o StrictHostKeyChecking=no"
 ```
 
 在虚拟机上，需要将他们加入系统服务以开机启动：
 
 ```sh
+cat > /root/.ssh/id_rsa <<EOF
+把你的密钥data/id_rsa内容放在这里
+EOF
+chmod 0600 /root/.ssh/id_rsa
 cat > /etc/systemd/system/ssh-tunnel.service <<EOF
 [Unit]
 Description=Frp Client Service
@@ -156,7 +160,7 @@ Type=simple
 User=nobody
 Restart=on-failure
 RestartSec=5s
-ExecStart=ssh -vNR 0.0.0.0:22:localhost:22 yin@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
+ExecStart=/usr/bin/ssh -vNR 0.0.0.0:22:localhost:22 root@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
 
 [Install]
 WantedBy=multi-user.target
@@ -171,7 +175,7 @@ Type=simple
 User=nobody
 Restart=on-failure
 RestartSec=5s
-ExecStart=ssh -vNR 0.0.0.0:5900:localhost:5900 yin@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
+ExecStart=/usr/bin/ssh -vNR 0.0.0.0:5900:localhost:5900 root@10.201.224.251 -p 2222 -o StrictHostKeyChecking=no
 
 [Install]
 WantedBy=multi-user.target
